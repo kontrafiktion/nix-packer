@@ -1,0 +1,94 @@
+{
+  "variables": {
+    "swap_size":         "",
+    "disk_size":         "20000",
+    "memmory_size":      "1024",
+    "cpus":              "1",
+    "vm_name":           "nixos-14.12-x86_64",
+    "ssh_username":      "vagrant",
+    "ssh_password":      "vagrant",    
+    "remote_iso_url":    "https://nixos.org/releases/nixos/14.12-small/nixos-14.12.231.139ead2/nixos-minimal-14.12.231.139ead2-x86_64-linux.iso",
+    "local_iso_url":     "isos/nixos-minimal-14.12.231.139ead2-x86_64-linux.iso",
+    "iso_checksum_type": "sha256",
+    "iso_checksum":      "5c0c1c365787073cdd9901510e71e0d29d677aec623957f7813ca85cbce5f8e8",
+    "nixos_channel":     "http://nixos.org/channels/nixos-14.12-small",
+    "boot_wait":         "40s"
+  },
+  "builders": [
+    {
+      "type": "virtualbox-iso",
+      "vm_name": "{{ user `vm_name` }}",
+      "guest_os_type": "Linux_64",
+      "disk_size": "{{ user `disk_size` }}",
+      "boot_wait": "{{ user `boot_wait` }}",
+      "boot_command": [
+        "root<enter>",
+        "export HTTP_IP={{ .HTTPIP }}<enter>",
+        "export HTTP_PORT={{ .HTTPPort }}<enter>",
+        "export SWAP=\"{{ user `swap_size` }}\"<enter>",
+        "export NIXOS_CHANNEL=\"{{ user `nixos_channel` }}\"<enter>",
+        "curl http://{{ .HTTPIP }}:{{ .HTTPPort }}/boot.sh -s > boot.sh<enter><wait>",
+        "sh boot.sh<enter><wait>"
+      ],
+      "http_directory": "nixos",
+      "iso_urls": [ "{{ user `local_iso_url` }}", "{{ user `remote_iso_url` }}" ],
+      "iso_checksum_type": "{{ user `iso_checksum_type` }}",
+      "iso_checksum": "{{ user `iso_checksum` }}",
+      "shutdown_command": "sudo shutdown -h now",
+      "ssh_username": "{{ user `ssh_username` }}",
+      "ssh_password": "{{ user `ssh_password` }}",
+      "ssh_key_path": "keys/vagrant.key",
+      "ssh_wait_timeout": "25m",
+      "virtualbox_version_file": ".vbox_version",
+      "guest_additions_mode": "disable",
+      "vboxmanage": [
+        ["modifyvm", "{{.Name}}", "--memory", "{{ user `memmory_size` }}"],
+        ["modifyvm", "{{.Name}}", "--cpus", "{{ user `cpus` }}"]
+      ]
+    },
+    {
+      "vm_name": "{{ user `vm_name` }}",
+      "type": "vmware-iso",
+      "guest_os_type": "other3xlinux-64",
+      "http_directory": "nixos",
+      "boot_wait": "{{ user `boot_wait` }}",
+      "iso_urls": [ "{{ user `local_iso_url` }}", "{{ user `remote_iso_url` }}" ],
+      "iso_checksum_type": "{{ user `iso_checksum_type` }}",
+      "iso_checksum": "{{ user `iso_checksum` }}",
+      "ssh_username": "{{ user `ssh_username` }}",
+      "ssh_password": "{{ user `ssh_password` }}",
+      "ssh_key_path": "keys/vagrant.key",
+      "ssh_wait_timeout": "25m",
+      "tools_upload_flavor": "linux",
+      "boot_command": [
+        "root<enter>",
+        "export HTTP_IP={{ .HTTPIP }}<enter>",
+        "export HTTP_PORT={{ .HTTPPort }}<enter>",
+        "export SWAP=\"{{ user `swap_size` }}\"<enter>",
+        "export NIXOS_CHANNEL=\"{{ user `nixos_channel` }}\"<enter>",
+        "curl http://{{ .HTTPIP }}:{{ .HTTPPort }}/boot.sh -s > boot.sh<enter><wait>",
+        "sh boot.sh<enter><wait>"
+      ],
+      "shutdown_command": "echo 'vagrant'|sudo shutdown -h now",
+      "disk_size": "{{ user `disk_size` }}",
+      "vmx_data": {
+        "memsize": "{{ user `memmory_size` }}",
+        "numvcpus": "{{ user `cpus` }}"
+      }
+    }
+  ],
+  "provisioners": [
+    {
+      "type": "shell",
+      "execute_command": "sudo -E sh '{{.Path}}'",
+      "script": "scripts/postinstall.sh"
+    }
+  ],
+  "post-processors": [
+    {
+      "type": "vagrant",
+      "output": "{{ user `vm_name` }}-{{.Provider}}.box"
+    }
+  ]
+}
+

@@ -57,7 +57,11 @@ if [ -z "$GRAPHICAL" ]; then
   sed -i '/graphical\.nix/d' /mnt/etc/nixos/configuration.nix
 fi
 
-nixos-install
+if [ -z "$ROOT_PASSWORD" ]; then
+  nixos-install
+else
+  echo -e "$ROOT_PASSWORD\n$ROOT_PASSWORD" | nixos-install
+fi
 
 printf "%s nixos" "$NIXOS_CHANNEL" > /mnt/root/.nix-channels
 
